@@ -1,4 +1,5 @@
 # TFREC-IR-3G
+NOTE: THIS IS THE PISENSOR PORTION OF THE PROJECT
 New version of the TFREC project, uses 3G to upload directly to Dropbox
 
 This repo will have two Forks: one for the PiSensor and one for the PiHub.
