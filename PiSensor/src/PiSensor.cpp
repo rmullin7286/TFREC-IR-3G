@@ -109,7 +109,16 @@ void PiSensor::run()
 
 void PiSensor::connect()
 {
+	Packet send;
+	int status;
 	
+	//prepare the packet
+	send.ambient = 0.0;
+	send.object = 0.0;
+	send.flag = PacketFlag::CONNECT;
+	send.signature = "\0";
+	
+	//send a packet to the hub requesting a connection
 }
 
 void PiSensor::test()
