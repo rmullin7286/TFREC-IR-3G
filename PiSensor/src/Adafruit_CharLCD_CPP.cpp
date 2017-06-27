@@ -63,6 +63,7 @@ bool LCDShield::init_compatible()
 
 bool LCDShield::end()
 {
+	system("gpio -x mcp23017:100:0x20 mode 106 out");
 	
 	if(Py_IsInitialized())
 	{
@@ -93,7 +94,8 @@ LCDShield::~LCDShield()
 
 void LCDShield::print(const string &input)
 {
-		
+	system("gpio -x mcp23017:100:0x20 mode 106 out");
+	
 	string command =
     "lcd.clear()\n"
 	"lcd.message('" + input + "')\n";
@@ -103,6 +105,8 @@ void LCDShield::print(const string &input)
 
 Button LCDShield::getButton()
 {
+	system("gpio -x mcp23017:100:0x20 mode 106 out");
+	
 	//NOBUTTON = 0
 	//SELECT = 1
 	//LEFT = 2
@@ -131,5 +135,6 @@ Button LCDShield::getButton()
 
 void LCDShield::isBacklit(bool backlit)
 {
+	system("gpio -x mcp23017:100:0x20 mode 106 out");
 	backlit ? PyRun_SimpleString("lcd.set_color(1.0, 0.0, 0.0)\n") : PyRun_SimpleString("lcd.set_color(0.0, 0.0, 0.0)\n");
 }

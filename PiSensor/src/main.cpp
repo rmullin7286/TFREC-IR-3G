@@ -1,5 +1,4 @@
 #include "../headers/PiSensor.hpp"
-using std::ostringstream;
 
 int main()
 {
