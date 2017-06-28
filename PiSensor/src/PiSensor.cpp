@@ -56,6 +56,7 @@ void PiSensor::menu()
 	do
 	{
 		input = shield.getButton();
+		usleep(3);
 	}while(input != Button::NOBUTTON);
 	
 	while(!back)
@@ -85,6 +86,7 @@ void PiSensor::menu()
 		do
 		{
 			input = shield.getButton();
+			usleep(3);
 			
 		}while(input != Button::LEFT && input != Button::RIGHT && input != Button::SELECT);
 	
@@ -121,6 +123,7 @@ void PiSensor::menu()
 		do
 		{
 			input = shield.getButton();
+			usleep(3);
 		}while(input != Button::NOBUTTON);
 	}
 }
@@ -233,6 +236,8 @@ void PiSensor::test()
 	
 	while(difftime(end, start) < 5.0)
 	{
+		end = time(NULL);
+		
 		if(radio.available())
 		{
 			radio.read(&status, sizeof(int));
@@ -253,8 +258,10 @@ void PiSensor::test()
 		//status 0 = no send back
 		//status 1 = Success
 		
-		while(difftime(end, start) < 60.0)
+		while(difftime(end, start) < 30.0)
 		{
+			end = time(NULL);
+			
 			if(radio.available())
 			{
 				radio.read(&status, sizeof(int));
