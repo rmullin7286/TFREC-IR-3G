@@ -4,6 +4,8 @@
 #include "Adafruit_CharLCD_CPP.hpp"
 #include <unistd.h>
 #include <sstream>
+#include <RF24/RF24.h>
+#include <ctime>
 
 using std::ostringstream;
 
@@ -12,6 +14,8 @@ enum PacketFlag
 {
 	LOG, UPLOAD, TEST, CONNECT, DISCONNECT
 };
+
+enum exitStatus{EXIT_LOGSUCCESS, EXIT_UPLOADSUCCESS, EXIT_UPLOADFAIL, EXIT_TESTSUCCESS, EXIT_NOCONNECTION, EXIT_CONNECTED, EXIT_DISCONNECT};
 
 //this is the standard configuration of the packet
 //to be sent between the RF24 modules
@@ -40,7 +44,7 @@ class PiSensor
 	enum MenuItem {CONNECT, TEST, LOG, UPLOAD, SET_SIG, DISCONNECT, SHUTDOWN, BACK};
 	
 public:
-	PiSensor();
+	PiSensor(uint16_t gpio=25, uint16_t ce=0);
 	~PiSensor();
 	
 	void run();
@@ -60,4 +64,7 @@ private:
 	
 	MLX90614 sensor;
 	LCDShield shield;
+	RF24 radio;
+	
+	const uint8_t pipes[2][6];
 };

@@ -1,9 +1,14 @@
 #include "../headers/PiSensor.hpp"
 
-PiSensor::PiSensor()
+PiSensor::PiSensor(uint16_t gpio, uint16_t ce) : radio(gpio, ce), pipes{"1Node", "2Node"}
 {
 	shield.init_compatible();
 	shield.print("   Hello!");
+	radio.begin();
+	radio.setRetries(15,15);
+	radio.openWritingPipe(pipes[1]);
+	radio.openReadingPipe(1, pipes[0]);
+	radio.setPALevel(RF24_PA_MAX);
 	sleep(2);
 }
 
@@ -111,14 +116,64 @@ void PiSensor::connect()
 {
 	Packet send;
 	int status;
+	time_t start, end;
+	double elapsed;
+	bool read;
 	
 	//prepare the packet
 	send.ambient = 0.0;
 	send.object = 0.0;
 	send.flag = PacketFlag::CONNECT;
-	send.signature = "\0";
+	send.signature[0] = '\0';
 	
 	//send a packet to the hub requesting a connection
+	radio.write(&send, sizeof(Packet));
+	
+	//wait for an acknowledgement response
+	radio.startListening();
+	
+	start = time(NULL);
+	end = time(NULL);
+	status = 0;
+	
+	while(difftime(end, start) < 5.0)
+	{
+		if(radio.available())
+		{
+			radio.read(&status, sizeof(int));
+			break;
+		}
+	}
+	
+	if(!status) shield.print("Error: No radio\nresponse.");
+	
+	else
+	{
+		//wait for success status after hub has connected.
+		start = time(NULL);
+		end = time(NULL);
+		status = 0;
+	
+		//status -1 = Error
+		//status 0 = no send back
+		//status 1 = Success
+		
+		while(difftime(end, start) < 60.0)
+		{
+			if(radio.available())
+			{
+				radio.read(&status, sizeof(int));
+				read = true;
+				break;
+			}
+		}
+		
+		if(status == -1) shield.print("Error: Could not\nnot connect.");
+		
+		else if(status == 0) shield.print("Error: radio\ntimeout.");
+		
+		else shield.print("Connected\nsuccesfully!");
+	}
 }
 
 void PiSensor::test()
