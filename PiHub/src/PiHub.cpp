@@ -26,21 +26,24 @@ PiHub::~PiHub()
 
 void PiHub::run()
 {
-	//if the radio is available, read the packet into
-	//the queue.
-	if(radio.available()) readRadio();
+	while(1)
+	{
+		//if the radio is available, read the packet into
+		//the queue.
+		if(radio.available()) readRadio();
 	
-	//if the queue has packets in it, process them.
-	if(!queue.isEmpty()) processPacket();
+		//if the queue has packets in it, process them.
+		if(!queue.isEmpty() || childRunning) processPacket();
+	}
 }
 
 void PiHub::readRadio()
 {
-	bool success = false;
-	int firstSize = queue.getSize(), nextSize;
-	
 	//read packet into buffer
 	radio.read(buffer, sizeof(Packet));
+	
+	bool success = false;
+	int firstSize = queue.getSize(), nextSize;
 	
 	//add to queue
 	queue.enqueue(buffer);
@@ -51,6 +54,7 @@ void PiHub::readRadio()
 	
 	radio.stopListening();
 	radio.write(&success, sizeof(bool));
+	radio.startListening();
 }
 
 void PiHub::processPacket()
@@ -184,7 +188,7 @@ void PiHub::upload()
 
 void PiHub::test()
 {
-	int status = system("ping dropbox -c 1");
+	int status = system("ping dropbox.com -c 1");
 	
 	if(WEXITSTATUS(status) == 0) exit(EXIT_TESTSUCCESS);
 	
@@ -193,13 +197,15 @@ void PiHub::test()
 
 void PiHub::connect()
 {
+	if(this->isConnected()) exit(1);
+	
 	system("stty -F /dev/ttyAMA0 115200");
 	
 	int status = system("sudo ./sakis3g connect");
 	
-	if(WEXITSTATUS(status) == 0) exit(EXIT_CONNECTED);
+	if(WEXITSTATUS(status) == 0) exit(1);
 	
-	else exit(EXIT_NOCONNECTION);
+	else exit(-1);
 }
 
 void PiHub::disconnect()
@@ -210,9 +216,18 @@ void PiHub::disconnect()
 
 void PiHub::sendReturnMessage(int status)
 {
+	usleep(10);
+	
 	radio.stopListening();
 	
 	radio.write(&status, sizeof(int));
 	
 	radio.startListening();
+}
+
+bool PiHub::isConnected()
+{
+	int status = system("ping dropbox.com -c 1");
+	
+	return WEXITSTATUS(status) == 0 ? true : false;
 }

@@ -13,6 +13,7 @@
 #include <sstream>
 #include <iomanip>
 #include "PacketQueue.hpp"
+#include <unistd.h>
 
 using std::fstream;
 using std::string;
@@ -20,6 +21,7 @@ using std::ostringstream;
 using std::setfill;
 using std::setw;
 using std::endl;
+using std::cout;
 
 enum exitStatus{EXIT_LOGSUCCESS, EXIT_UPLOADSUCCESS, EXIT_UPLOADFAIL, EXIT_TESTSUCCESS, EXIT_NOCONNECTION, EXIT_CONNECTED, EXIT_DISCONNECT};
 
@@ -31,6 +33,8 @@ public:
 	~PiHub();
 	
 	void run();
+	
+
 	
 private:
 	void readRadio();
@@ -45,6 +49,8 @@ private:
 	
 	void sendReturnMessage(int status);
 	
+	bool isConnected();
+		
 	fstream flog;
 	fstream dataFile;
 	
