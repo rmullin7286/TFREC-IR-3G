@@ -10,6 +10,13 @@ PiSensor::PiSensor(uint16_t gpio, uint16_t ce) : radio(gpio, ce), pipes{"1Node",
 	radio.openReadingPipe(1, pipes[0]);
 	radio.setPALevel(RF24_PA_MAX);
 	sleep(2);
+	
+	save.open("signature.txt", fstream::in);
+	
+	if(save.good()) getline(save, signature);
+	else signature = "nosig";
+	
+	save.close();
 }
 
 PiSensor::~PiSensor()
@@ -23,11 +30,14 @@ void PiSensor::mainScreen()
 	
 	while(1)
 	{
+		double ambient = sensor.readAmbient();
+		double object = sensor.readObject();
+		
 		//check to see if the user has pressed a button.
 		//If any button has been pressed, initiate the menu.
-		if(shield.getButton() != Button::NOBUTTON) menu();
+		if(shield.getButton() != Button::NOBUTTON) menu(ambient, object);
 		
-		format << "AMBIENT: " << sensor.readAmbient() << "\\nOBJECT: " << sensor.readObject();
+		format << "AMBIENT: " << ambient << "\\nOBJECT: " << object;
 		
 		shield.print(format.str());
 		format.str("");
@@ -36,7 +46,7 @@ void PiSensor::mainScreen()
 	}
 }
 
-void PiSensor::menu()
+void PiSensor::menu(double ambient, double object)
 {
 	//CONNECT = 0 
 	//TEST = 1
@@ -103,7 +113,7 @@ void PiSensor::menu()
 				break;
 			case MenuItem::TEST: test();
 				break;
-			case MenuItem::LOG: log();
+			case MenuItem::LOG: log(ambient, object);
 				break;
 			case MenuItem::UPLOAD: upload();
 				break;
@@ -224,7 +234,7 @@ void PiSensor::test()
 	send.flag = PacketFlag::TEST;
 	send.signature[0] = '\0';
 	
-	//send a packet to the hub requesting a connection
+	//send a packet to the hub requesting a test
 	radio.write(&send, sizeof(Packet));
 	
 	//wait for an acknowledgement response
@@ -249,6 +259,8 @@ void PiSensor::test()
 	
 	else
 	{
+		shield.print("Testing\\nconnection");
+		
 		//wait for success status after hub has connected.
 		start = time(NULL);
 		end = time(NULL);
@@ -283,9 +295,47 @@ void PiSensor::test()
 	sleep(2);
 }
 
-void PiSensor::log()
+void PiSensor::log(double ambient, double object)
 {
+	Packet send;
+	send.flag = PacketFlag::LOG;
+	send.ambient = ambient;
+	send.object = object;
 	
+	time_t start;
+	time_t end;
+	
+	int status;
+	
+	shield.print("Sending \\nrequest");
+	
+	//send a packet to the hub requesting 
+	radio.write(&send, sizeof(Packet));
+	
+	//wait for an acknowledgement response
+	radio.startListening();
+	
+	start = time(NULL);
+	end = time(NULL);
+	status = 0;
+	
+	while(difftime(end, start) < 5.0)
+	{
+		end = time(NULL);
+		
+		if(radio.available())
+		{
+			radio.read(&status, sizeof(int));
+			break;
+		}
+	}
+	
+	if(!status) shield.print("Error: No radio\\nresponse.");
+	
+	else
+	{
+		shield.print("logging measurement:");
+	}
 }
 
 void PiSensor::upload()
@@ -295,7 +345,82 @@ void PiSensor::upload()
 
 void PiSensor::setSignature()
 {
+	Button input;
+	Button release;
+	int cursor;
+	string display;
+	char sig[16] = "\0";
+	bool done = false;
+	int length;
 	
+	
+	//load the ASCII values into an array; (32 space, 97-122 alphabet, 48-57 numbers)
+	char characters[37];
+	characters[0] = 32;
+	
+	for (int i = 1; i < 27; i++)
+	{
+		characters[i] = i + 96;
+	}
+	
+	for (int i = 27; i < 37; i++)
+	{
+		characters[i] = i + 21;
+	}
+	
+	sig[0] = characters[1];
+	length = 1;
+	display = "Enter signature:\\n";
+	
+	while(!done)
+	{
+		shield.print(display + sig);
+		
+		do
+		{
+			input = shield.getButton();
+			usleep(2);
+		}while(input == Button::NOBUTTON);
+		
+		do
+		{
+			release = shield.getButton();
+			usleep(2);
+		}while(release != Button::NOBUTTON);
+		
+		switch(input)
+		{
+		case Button::SELECT: done = true;
+			break;
+		case Button::LEFT: if(length > 1) { sig[length - 1] = '\0';
+			length--; }
+			break;
+		case Button::RIGHT: if(length < 16) { length++;
+			sig[length - 1] = characters[1]; }
+			break;
+		case Button::DOWN: if(sig[length - 1] == characters[0]) sig[length - 1] = characters[36];
+			else if(sig[length - 1] == characters[1]) sig[length - 1] = characters[0];
+			else if(sig[length - 1] == characters[27]) sig[length - 1] = characters[26];
+			else sig[length - 1]--;
+			break;
+		case Button::UP: if(sig[length - 1] == characters[36]) sig[length - 1] = characters[0];
+			else if(sig[length - 1] == characters[26]) sig[length - 1] = characters[27];
+			else if(sig[length - 1] == characters[0]) sig[length - 1] = characters[1];
+			else sig[length - 1]++;
+			break;
+		}
+	}
+	
+	display = "Signature set:\\n";
+	signature = sig;
+	shield.print(display + signature);
+	
+	//save the signature to a txt file
+	save.open("signature.txt", fstream::out);
+	save << signature << std::endl;
+	save.close();
+	
+	sleep(2);
 }
 
 void PiSensor::disconnect()

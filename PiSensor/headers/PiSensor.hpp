@@ -6,8 +6,10 @@
 #include <sstream>
 #include <RF24/RF24.h>
 #include <ctime>
+#include <fstream>
 
 using std::ostringstream;
+using std::fstream;
 
 //this is borrowed from the PiHub app for use here.
 enum PacketFlag
@@ -50,12 +52,12 @@ public:
 	void run();
 	
 private:
-	void menu();
+	void menu(double ambient, double object);
 	void mainScreen();
 	
 	void connect();
 	void test();
-	void log();
+	void log(double ambient, double object);
 	void upload();
 	void setSignature();
 	void disconnect();
@@ -65,6 +67,8 @@ private:
 	MLX90614 sensor;
 	LCDShield shield;
 	RF24 radio;
+	string signature;
+	fstream save;
 	
 	const uint8_t pipes[2][6];
 };
