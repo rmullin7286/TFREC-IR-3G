@@ -305,7 +305,12 @@ void PiSensor::log(double ambient, double object)
 	time_t start;
 	time_t end;
 	
-	int status;
+	int status = 0;
+	
+	if(signature == "nosig")
+	{
+		setSignature();
+	}
 	
 	shield.print("Sending \\nrequest");
 	
@@ -334,13 +339,84 @@ void PiSensor::log(double ambient, double object)
 	
 	else
 	{
-		shield.print("logging measurement:");
+		shield.print("logging measurement...");
+		
+		start = time(NULL);
+		end = time(NULL);
+		status = 0;
+		
+		while(difftime(end, start) < 30.0)
+		{
+			end = time(NULL);
+			
+			if(radio.available())
+			{
+				radio.read(&status, sizeof(int));
+				break;
+			}
+		}
+		
+		if(status == -1) shield.print("Error: Could not\\nlog to file");
+		else if(status == 0) shield.print("Error: Radio timed out");
+		else shield.print("Log successful");
 	}
+	
+	radio.stopListening();
+	sleep(2);
 }
 
 void PiSensor::upload()
 {
+	Packet send;
+	int status = 0;
+	time_t start;
+	time_t end;
 	
+	shield.print("sending request");
+	
+	radio.write(&send, sizeof(Packet));
+	
+	start = time(NULL);
+	end = time(NULL);
+	
+	radio.startListening();
+	
+	while(difftime(end, start) < 5.0)
+	{
+		end = time(NULL);
+		if(radio.available())
+		{
+			radio.read(&status, sizeof(int));
+		}
+	}
+	
+	if(!status) shield.print("Error: Radio\\ntimeout");
+	
+	else
+	{
+		shield.print("Request sent.\\nWaiting...");
+		status = 0;
+		start = time(NULL);
+		end = time(NULL);
+		
+		while(difftime(end, start) < 60.0)
+		{
+			end = time(NULL);
+			
+			if(radio.available())
+			{
+				radio.read(&status, sizeof(int));
+				break;
+			}
+		}
+		
+		if(status == -1) shield.print("Error: Could\\nnot upload");
+		if(status == 0) shield.print("Error: Radio\\ntimeout");
+		if(status == 1) shield.print("Upload successful");
+	}
+	
+	radio.stopListening();
+	sleep(2);
 }
 
 void PiSensor::setSignature()
@@ -425,10 +501,66 @@ void PiSensor::setSignature()
 
 void PiSensor::disconnect()
 {
+	Packet send;
+	send.flag = PacketFlag::DISCONNECT;
+	send.ambient = 0.0;
+	send.object = 0.0;
+	send.signature[0] = '\0';
 	
+	shield.print("sending request...");
+	radio.write(&send, sizeof(Packet));
+	
+	time_t start = time(NULL);
+	time_t end = time(NULL);
+	int status = 0;
+	
+	radio.startListening();
+	
+	while(difftime(end, start) < 5.0)
+	{
+		end = time(NULL);
+		
+		if(radio.available())
+		{
+			radio.read(&status, sizeof(int));
+			break;
+		}
+	}
+	
+	if(!status) shield.print("Error: Radio\\ntimeout");
+	
+	else
+	{
+		shield.print("Request sent.\\nwaiting...");
+		
+		status = 0;
+		start = time(NULL);
+		end = time(NULL);
+		
+		while(difftime(end, start) < 30.0)
+		{
+			end = time(NULL);
+			
+			if(radio.available())
+			{
+				radio.read(&status, sizeof(int));
+				break;
+			}
+		}
+		
+		if(status == -1) shield.print("Error disconnecting");
+		else if(status == 0) shield.print("Error:Radio\\ntimeout");
+		else shield.print("Succesfully\\ndisconnected");
+	}
+	
+	radio.stopListening();
+	sleep(2);
 }
 
 void PiSensor::shutdown()
 {
-	
+	shield.print("shutting down");
+	sleep(2);
+	shield.end();
+	system("sudo shutdown -h now");
 }
