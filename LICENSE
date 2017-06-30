@@ -1,0 +1,11 @@
+# License
+
+This project is completely open source, and can be used by anyone for any purpose. How ever, dependencies such as:
+
+* bcm2835 from Airspayce
+* RF24.h
+* sakis3g
+* dropbox_uploader
+* adafruit_charlcd
+
+may be subject to licensing agreements.
