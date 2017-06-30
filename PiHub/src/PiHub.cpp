@@ -158,12 +158,12 @@ void PiHub::log(Packet *processed)
 	flog << fileName << endl;
 	flog.close();
 	
-	exit(EXIT_LOGSUCCESS);
+	exit(1);
 }
 
 void PiHub::upload()
 {
-	fstream pending("pendingChanges.txt", fstream::app);
+	fstream pending("pendingChanges.txt", fstream::in);
 	string buffer;
 	int status;
 	
@@ -177,12 +177,16 @@ void PiHub::upload()
 			
 		status = system(buffer.c_str());
 		
-		if(WEXITSTATUS(status) == 1) exit(EXIT_UPLOADFAIL);  
+		if(WEXITSTATUS(status) == 1) exit(-1);  
 	}
 	
 	//wipe pending before continuing
 	pending.close();
 	pending.open("pendingChanges.txt", fstream::out);
+	pending.close();
+	//fstream::out automatically wipes the file
+	
+	exit(1);
 	
 }
 
@@ -190,9 +194,9 @@ void PiHub::test()
 {
 	int status = system("ping dropbox.com -c 1");
 	
-	if(WEXITSTATUS(status) == 0) exit(EXIT_TESTSUCCESS);
+	if(WEXITSTATUS(status) == 0) exit(1);
 	
-	else exit(EXIT_NOCONNECTION);
+	else exit(-1);
 }
 
 void PiHub::connect()
