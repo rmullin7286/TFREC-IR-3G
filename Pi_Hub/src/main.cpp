@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[])
 {
-	//test();
+	test();
 	
 	PiHub app;
 	
@@ -20,5 +20,7 @@ int main(int argc, char *argv[])
 
 void test()
 {
-
+	int x = static_cast<int>(PacketFlag::UPDATE);
+	int y = static_cast<int>(PacketFlag::CONNECT);
+	usleep(3);
 }
