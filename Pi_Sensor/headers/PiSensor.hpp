@@ -12,6 +12,8 @@
 using std::ostringstream;
 using std::fstream;
 
+void test();
+
 //this is borrowed from the PiHub app for use here.
 enum PacketFlag
 {

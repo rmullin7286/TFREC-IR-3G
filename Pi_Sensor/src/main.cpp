@@ -2,6 +2,8 @@
 
 int main(int argc, char *argv[])
 {
+	test();
+	
 	PiSensor app;
 	if(argc > 1)
 	{
@@ -9,4 +11,11 @@ int main(int argc, char *argv[])
 		app.update_finish(status);
 	}
 	app.run();
+}
+
+void test()
+{
+	int x = PacketFlag::UPDATE;
+	int y = PacketFlag::CONNECT;
+	usleep(1);
 }
