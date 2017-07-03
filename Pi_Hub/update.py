@@ -9,7 +9,6 @@ numbers = buffer.split('.')
 
 os.system('cd ' + os.path.dirname(os.path.realpath(__file__)) +  '/..')
 os.system('git pull')
-time.sleep(1)
 
 if sys.argv[1] == 'PiSensor':
     os.system('cd ' + os.path.dirname(os.path.realpath(__file)))
