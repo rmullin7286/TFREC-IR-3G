@@ -85,7 +85,7 @@ void PiHub::processPacket()
 		processed = queue.dequeue();
 		
 		//if the process asks to update, might as well update here.
-		if(processed->flag = PacketFlag::UPDATE) update();
+		if(processed->flag == PacketFlag::UPDATE) update();
 		
 		childRunning = true;
 		
