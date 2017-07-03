@@ -623,15 +623,15 @@ void PiSensor::update()
 			}
 		}
 		
-		if(status == -2) shield.print("no internet\\nconnection");
-		else if(status == -1) shield.print("Error: could\\nnot update");
-		else if(status == 0) shield.print("Error: radio\\ntimeout");
-		else if(status == 1) shield.print("Pi Hub already\\nup to date");
-		else if(status == 2) shield.print("Pi Hub updated!");
+		if(status == 0) shield.print("Error: Radio\\ntimeout");
+		else if (status == 1) shield.print("PiHub already\\nup to date");
+		else shield.print("PiHub updated!");
 	}
 	
 	sleep(2);
 	radio.stopListening();
+	
+	shield.print("updating\\nPi Sensor");
 	
 	//now update the pi sensor
 	status = system("ping github.com -c 1");
@@ -645,6 +645,7 @@ void PiSensor::update()
 	{
 		shield.print("updating. Sensor\\nwill restart");
 		sleep(2);
+		shield.end();
 		system("python update.py PiSensor &");
 		exit(0);
 	}
