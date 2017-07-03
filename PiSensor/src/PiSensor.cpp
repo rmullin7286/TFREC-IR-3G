@@ -55,7 +55,8 @@ void PiSensor::menu(double ambient, double object)
 	//SET_SIG = 4
 	//DISCONNECT = 5
 	//SHUTDOWN = 6
-	//BACK = 7
+	//UPDATE = 7
+	//BACK = 8
 	Button input;
 	MenuItem item = MenuItem::CONNECT;
 	bool back = false;
@@ -88,6 +89,8 @@ void PiSensor::menu(double ambient, double object)
 				break;
 		case MenuItem::SHUTDOWN:   shield.print(" <  SHUTDOWN  >");
 				break;
+		case MenuItem::UPDATE:     shield.print(" <   UPDATE   >");
+				break;
 		case MenuItem::BACK:       shield.print(" <    BACK    >");
 				break;
 		}
@@ -104,7 +107,7 @@ void PiSensor::menu(double ambient, double object)
 		{
 		case Button::LEFT: static_cast<int>(item) == 0 ? item = MenuItem::BACK : item = static_cast<MenuItem>(static_cast<int>(item) - 1);
 			break;
-		case Button::RIGHT: static_cast<int>(item) == 7 ? item = MenuItem::CONNECT : item = static_cast<MenuItem>(static_cast<int>(item) + 1);
+		case Button::RIGHT: static_cast<int>(item) == 8 ? item = MenuItem::CONNECT : item = static_cast<MenuItem>(static_cast<int>(item) + 1);
 			break;
 		case Button::SELECT:
 			switch(item)
@@ -122,6 +125,8 @@ void PiSensor::menu(double ambient, double object)
 			case MenuItem::DISCONNECT: disconnect();
 				break;
 			case MenuItem::SHUTDOWN: shutdown();
+				break;
+			case MenuItem::UPDATE: update();
 				break;
 			case MenuItem::BACK: back = true;
 				break;
@@ -563,4 +568,11 @@ void PiSensor::shutdown()
 	sleep(2);
 	shield.end();
 	system("sudo shutdown -h now");
+}
+
+void PiSensor::update()
+{
+	int status = system("python update.py PiSensor");
+	
+	if(WEXITSTATUS(status)
 }

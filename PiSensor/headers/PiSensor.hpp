@@ -14,7 +14,7 @@ using std::fstream;
 //this is borrowed from the PiHub app for use here.
 enum PacketFlag
 {
-	LOG, UPLOAD, TEST, CONNECT, DISCONNECT
+	LOG, UPLOAD, TEST, CONNECT, DISCONNECT, UPDATE
 };
 
 enum exitStatus{EXIT_LOGSUCCESS, EXIT_UPLOADSUCCESS, EXIT_UPLOADFAIL, EXIT_TESTSUCCESS, EXIT_NOCONNECTION, EXIT_CONNECTED, EXIT_DISCONNECT};
@@ -43,7 +43,7 @@ struct Packet
 
 class PiSensor
 {
-	enum MenuItem {CONNECT, TEST, LOG, UPLOAD, SET_SIG, DISCONNECT, SHUTDOWN, BACK};
+	enum MenuItem {CONNECT, TEST, LOG, UPLOAD, SET_SIG, DISCONNECT, SHUTDOWN, UPDATE, BACK};
 	
 public:
 	PiSensor(uint16_t gpio=25, uint16_t ce=0);
