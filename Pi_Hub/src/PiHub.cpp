@@ -83,6 +83,10 @@ void PiHub::processPacket()
 	{
 		//dequeue the next packet
 		processed = queue.dequeue();
+		
+		//if the process asks to update, might as well update here.
+		if(processed->flag = PacketFlag::UPDATE) update();
+		
 		childRunning = true;
 		
 		//fork the process
@@ -215,7 +219,7 @@ void PiHub::connect()
 void PiHub::disconnect()
 {
 	system("sudo ./sakis3g disconnect");
-	exit(EXIT_DISCONNECT);
+	exit(1);
 }
 
 void PiHub::sendReturnMessage(int status)
@@ -234,4 +238,31 @@ bool PiHub::isConnected()
 	int status = system("ping dropbox.com -c 1");
 	
 	return WEXITSTATUS(status) == 0 ? true : false;
+}
+
+void PiHub::update()
+{	
+	system("python update.py PiHub &");
+	exit(0);
+}
+
+void PiHub::update_finish(int status)
+{
+	//status 1 = already up to date
+	//status 2 = updated
+	radio.stopListening();
+	
+	if(status == 0)
+	{
+		status = 1;
+		radio.write(&status, sizeof(int));
+	}
+	
+	else
+	{
+		status = 2;
+		radio.write(&status, sizeof(int));
+	}
+	
+	radio.startListening();
 }

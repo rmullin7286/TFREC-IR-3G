@@ -12,7 +12,7 @@
 //DISCONNECT: disconnect PiHub
 enum PacketFlag
 {
-	LOG, UPLOAD, TEST, CONNECT, DISCONNECT
+	LOG, UPLOAD, TEST, CONNECT, DISCONNECT, UPDATE
 };
 
 //this is the standard configuration of the packet

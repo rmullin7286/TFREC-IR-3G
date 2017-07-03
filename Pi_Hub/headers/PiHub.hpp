@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <ctime>
 #include <string>
+#include <cstring>
 #include <sstream>
 #include <iomanip>
 #include "PacketQueue.hpp"
@@ -33,6 +34,7 @@ public:
 	~PiHub();
 	
 	void run();
+	void update_finish(int status);
 	
 
 	
@@ -46,6 +48,7 @@ private:
 	void test();
 	void connect();
 	void disconnect();
+	void update();
 	
 	void sendReturnMessage(int status);
 	
