@@ -7,6 +7,7 @@
 #include <RF24/RF24.h>
 #include <ctime>
 #include <fstream>
+#include <cstring>
 
 using std::ostringstream;
 using std::fstream;
@@ -50,6 +51,7 @@ public:
 	~PiSensor();
 	
 	void run();
+	void update_finish(int status);
 	
 private:
 	void menu(double ambient, double object);
@@ -62,6 +64,7 @@ private:
 	void setSignature();
 	void disconnect();
 	void shutdown();
+	void update();
 	void back();
 	
 	MLX90614 sensor;

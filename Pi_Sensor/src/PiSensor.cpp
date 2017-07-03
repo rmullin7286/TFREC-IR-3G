@@ -572,7 +572,88 @@ void PiSensor::shutdown()
 
 void PiSensor::update()
 {
-	int status = system("python update.py PiSensor");
+	//-2: no connection
+	//-1: other error
+	//0: radio timeout
+	//1: already up to date
+	//2: updated
+	int status = 0;
+	Packet send;
+	send.flag = PacketFlag::UPDATE;
+	send.ambient = 0.0;
+	send.object = 0.0;
+	send.signature[0] = '\0';
 	
-	if(WEXITSTATUS(status)
+	shield.print("sending request\\nfor update");
+	radio.write(&send, sizeof(Packet));
+	
+	time_t start = time(NULL);
+	time_t end = time(NULL);
+	
+	radio.startListening();
+	
+	while(difftime(end, start) < 5.0)
+	{
+		end = time(NULL);
+		if(radio.available())
+		{
+			radio.read(&status, sizeof(int));
+			break;
+		}
+	}
+	
+	if(!status) shield.print("Error: Radio\\ntimeout");
+	
+	else
+	{
+		shield.print("Request sent.\\nwaiting...");
+		
+		status = 0;
+		start = time(NULL);
+		end = time(NULL);
+		
+		while(difftime(end, start) < 60.0)
+		{
+			end = time(NULL);
+			
+			if(radio.available())
+			{
+				radio.read(&status, sizeof(int));
+				break;
+			}
+		}
+		
+		if(status == -2) shield.print("no internet\\nconnection");
+		else if(status == -1) shield.print("Error: could\\nnot update");
+		else if(status == 0) shield.print("Error: radio\\ntimeout");
+		else if(status == 1) shield.print("Pi Hub already\\nup to date");
+		else if(status == 2) shield.print("Pi Hub updated!");
+	}
+	
+	sleep(2);
+	radio.stopListening();
+	
+	//now update the pi sensor
+	status = system("ping github.com -c 1");
+	if(WEXITSTATUS(system)!= 0) 
+	{
+		shield.print("no wifi on\\nPi Sensor");
+		sleep(2);
+	}
+	
+	else
+	{
+		shield.print("updating. Sensor\\nwill restart");
+		sleep(2);
+		system("python update.py PiSensor &");
+		exit(0);
+	}
+}
+
+void PiSensor::update_finish(int status)
+{
+	//exit 0 = updated
+	//exit 1 = already up to date
+	if(status == 0) shield.print("update\\nsuccesful!");
+	else shield.print("already up to\\ndate.");
 }
