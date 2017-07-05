@@ -3,20 +3,20 @@
 PiHub::PiHub(uint16_t gpio, uint16_t ce) : radio(gpio, ce), pipes{"1Node", "2Node"}
 {
 	//setup member variables
-	buffer = new Packet;
 	childRunning = false;
 	
 	//initialize the 3G shield. Make sure it's turned on
-	//system("stty -F /dev/ttyAMA0 115200");
-	//system("sudo ./sakis3g connect");
+	system("stty -F /dev/ttyAMA0 115200");
+
 	
 	//setup the RF24 radio
 	radio.begin();
 	radio.setRetries(15, 15);
 	radio.openWritingPipe(pipes[0]);
 	radio.openReadingPipe(1, pipes[1]); 
-	radio.setPALevel(RF24_PA_MAX);
+	radio.setPALevel(RF24_PA_LOW);
 	radio.startListening();
+	radio.printDetails();
 }
 
 PiHub::~PiHub()
@@ -31,6 +31,7 @@ void PiHub::run()
 		//if the radio is available, read the packet into
 		//the queue.
 		if(radio.available()) readRadio();
+		usleep(10);
 	
 		//if the queue has packets in it, process them.
 		if(!queue.isEmpty() || childRunning) processPacket();
@@ -39,10 +40,13 @@ void PiHub::run()
 
 void PiHub::readRadio()
 {
+	buffer = new Packet;
+	cout << "reading radio" << endl;
 	//read packet into buffer
 	radio.read(buffer, sizeof(Packet));
-	
-	bool success = false;
+	usleep(1000);
+	cout << "request is " << buffer->flag << endl;
+	int success = 0;
 	int firstSize = queue.getSize(), nextSize;
 	
 	//add to queue
@@ -50,16 +54,29 @@ void PiHub::readRadio()
 	
 	//send confirmation signal
 	nextSize = queue.getSize();
-	if(nextSize == firstSize + 1) success = true;
+	if(nextSize == firstSize + 1) 
+	{
+		success = 1;
+		buffer = nullptr;
+	}
+	
+	else
+	{
+		delete buffer;
+	}
+	
+	cout << "returning " << success << endl;
 	
 	radio.stopListening();
-	radio.write(&success, sizeof(bool));
+	radio.write(&success, sizeof(int));
 	radio.startListening();
+	cout << "sent response" << endl;
 }
 
 void PiHub::processPacket()
 {
 	static pid_t pid;
+	static pid_t end;
 	static int status;
 	static Packet *processed;
 	
@@ -67,11 +84,14 @@ void PiHub::processPacket()
 	if(childRunning)
 	{
 		//check if child ended
-		pid = waitpid(-1, &status, WNOHANG);
+		end = waitpid(pid, &status, WNOHANG);
+		cout << "end is " << end << endl;
 		
 		if(WIFEXITED(status))
 		{
+			cout << "child process ended" << endl;
 			status = WEXITSTATUS(status);
+			cout << "status is " << status << endl;
 			childRunning = false;
 			
 			sendReturnMessage(status);
@@ -95,8 +115,14 @@ void PiHub::processPacket()
 		//catch for child process
 		if(pid == 0)
 		{
+			cout << "running child process" << endl;
+			
 			childProcess(processed);
 		}
+		
+		cout << "pid is " << pid << endl;
+		
+		usleep(500000);
 	}
 }
 
@@ -162,7 +188,7 @@ void PiHub::log(Packet *processed)
 	flog << fileName << endl;
 	flog.close();
 	
-	exit(1);
+	exit(2);
 }
 
 void PiHub::upload()
@@ -197,28 +223,33 @@ void PiHub::upload()
 void PiHub::test()
 {
 	int status = system("ping dropbox.com -c 1");
+	cout << "exit status of ping is " << WEXITSTATUS(status);
 	
-	if(WEXITSTATUS(status) == 0) exit(1);
+	if(WEXITSTATUS(status) == 0) exit(0);
 	
-	else exit(-1);
+	else exit(2);
 }
 
 void PiHub::connect()
 {
-	if(this->isConnected()) exit(1);
+	cout << "child process connecting" << endl;
+	//if(this->isConnected()) exit(1);
 	
-	system("stty -F /dev/ttyAMA0 115200");
+
 	
 	int status = system("sudo ./sakis3g connect");
+	cout << "status is " << WEXITSTATUS(status);
+	cout << "system call done" << endl;
 	
-	if(WEXITSTATUS(status) == 0) exit(1);
+	if(WEXITSTATUS(status) == 0) exit(0);
 	
-	else exit(-1);
+	else exit(1);
 }
 
 void PiHub::disconnect()
 {
 	system("sudo ./sakis3g disconnect");
+	cout << "finished disconnect call" << endl;
 	exit(1);
 }
 
@@ -230,12 +261,16 @@ void PiHub::sendReturnMessage(int status)
 	
 	radio.write(&status, sizeof(int));
 	
+	cout << "sent return message " << status << endl;
+	
 	radio.startListening();
 }
 
 bool PiHub::isConnected()
 {
 	int status = system("ping dropbox.com -c 1");
+	
+	cout << "ping return value " << WEXITSTATUS(status) << endl;
 	
 	return WEXITSTATUS(status) == 0 ? true : false;
 }
