@@ -8,6 +8,7 @@
 #include <ctime>
 #include <fstream>
 #include <cstring>
+#include <iostream>
 
 using std::ostringstream;
 using std::fstream;

@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[])
 {
-	test();
+	//test();
 	
 	PiSensor app;
 	if(argc > 1)
