@@ -569,11 +569,6 @@ void PiSensor::shutdown()
 
 void PiSensor::update()
 {
-	//-2: no connection
-	//-1: other error
-	//0: radio timeout
-	//1: already up to date
-	//2: updated
 	int status = 0;
 	Packet send;
 	send.flag = PacketFlag::UPDATE;
@@ -597,6 +592,7 @@ void PiSensor::update()
 			radio.read(&status, sizeof(int));
 			break;
 		}
+		usleep(2);
 	}
 	
 	if(!status) shield.print("Error: Radio\\ntimeout");
@@ -618,11 +614,11 @@ void PiSensor::update()
 				radio.read(&status, sizeof(int));
 				break;
 			}
+			usleep(2);
 		}
 		
-		if(status == 0) shield.print("Error: Radio\\ntimeout");
-		else if (status == 1) shield.print("PiHub already\\nup to date");
-		else shield.print("PiHub updated!");
+		if(status == 0) shield.print("Pi Hub\\nupdated!");
+		else shield.print("Error: Could\\nnot update");
 	}
 	
 	sleep(2);
