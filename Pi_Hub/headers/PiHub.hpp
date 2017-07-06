@@ -37,21 +37,20 @@ public:
 	
 	void run();
 	void update_finish(int status);
-	void update();
-	
-
+	void upload();
+	void log(Packet *processed);
 	
 private:
 	void readRadio();
 	void processPacket();
 	void childProcess(Packet *processed);
 	
-	void log(Packet *processed);
-	void upload();
+
+
 	void test();
 	void connect();
 	void disconnect();
-
+	void update();
 	
 	void sendReturnMessage(int status);
 	

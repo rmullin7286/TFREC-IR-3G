@@ -20,6 +20,11 @@ int main(int argc, char *argv[])
 
 void test()
 {
+	Packet *test = new Packet;
+	test->ambient = 10.0;
+	test->object = 20.0;
+	strcpy(test->signature, "test");
+	test->flag = PacketFlag::UPLOAD;
 	PiHub app;
-	app.update();
+	app.log(test);
 }

@@ -14,8 +14,11 @@ PiHub::PiHub(uint16_t gpio, uint16_t ce) : radio(gpio, ce), pipes{"1Node", "2Nod
 	radio.setRetries(15, 15);
 	radio.openWritingPipe(pipes[0]);
 	radio.openReadingPipe(1, pipes[1]); 
-	radio.setPALevel(RF24_PA_MAX);
+	radio.setPALevel(RF24_PA_LOW);
 	radio.setDataRate(RF24_250KBPS);
+	//radio.setCRCLength(RF24_CRC_8);
+	//radio.setPayloadSize(sizeof(Packet));
+	//radio.write_register(DYNPD, 0);
 	radio.startListening();
 	radio.printDetails();
 }
@@ -153,6 +156,7 @@ void PiHub::log(Packet *processed)
 {
 	string fileName, currentTime, buffer;
 	vector<string> changes;
+	bool good;
 	
 	//get the current time info
 	time_t t = time(0);
@@ -165,8 +169,16 @@ void PiHub::log(Packet *processed)
 		<< (timeInfo->tm_year + 1900) << ".csv";
 	fileName = format.str();
 	
+	//insert the current file into the changes vector
+	changes.push_back(fileName);
+	
+	//find out whether or not the log file exists
+	flog.open("./logs/" + fileName, fstream::in);
+	good = flog.good();
+	flog.close();
+	
 	//if the file doesn't exist, create it.
-	if(access(fileName.c_str(), F_OK) == -1)
+	if(!good)
 	{
 		flog.open(("./logs/" + fileName), fstream::out);
 		flog << "time, signature, ambient temp, object temp" << endl;
@@ -182,7 +194,7 @@ void PiHub::log(Packet *processed)
 	flog << timeInfo->tm_hour << ":" << timeInfo->tm_min << ":" << timeInfo->tm_sec << ","
 		<< processed->signature << "," << processed->ambient << "," << processed->object << endl;
 	
-	//close and exit the program
+	//close the file and delete the packet from memory
 	delete processed;
 	flog.close();
 	
@@ -191,7 +203,7 @@ void PiHub::log(Packet *processed)
 	while(flog.good() && !flog.eof())
 	{
 		getline(flog, buffer);
-		if(buffer != fileName) changes.push_back(buffer);
+		if(buffer != fileName && buffer != "") changes.push_back(buffer);
 	}
 	
 	flog.close();
@@ -211,19 +223,24 @@ void PiHub::upload()
 {
 	fstream pending("pendingChanges.txt", fstream::in);
 	string buffer;
-	int status;
+	int status = 0;
 	
 	while(!pending.eof())
 	{
 		//use flog to read in the log of files to upload
 		getline(pending, buffer);
 		
+		if(buffer == "") break;
+		
+		cout << "loop" << endl;
+		
 		buffer = "./dropbox_uploader.sh upload ./logs/" + buffer +
 			" " + buffer;
 			
-		status = system(buffer.c_str());
+		status = system(buffer.c_str());	
+		status = WEXITSTATUS(status);
 		
-		if(WEXITSTATUS(status) == 1) exit(-1);  
+		if(status != 0) break;
 	}
 	
 	//wipe pending before continuing
@@ -232,7 +249,7 @@ void PiHub::upload()
 	pending.close();
 	//fstream::out automatically wipes the file
 	
-	exit(1);
+	exit(status);
 	
 }
 
