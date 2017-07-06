@@ -37,6 +37,7 @@ public:
 	
 	void run();
 	void update_finish(int status);
+	void update();
 	
 
 	
@@ -50,7 +51,7 @@ private:
 	void test();
 	void connect();
 	void disconnect();
-	void update();
+
 	
 	void sendReturnMessage(int status);
 	

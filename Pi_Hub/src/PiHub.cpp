@@ -297,21 +297,11 @@ void PiHub::update()
 
 void PiHub::update_finish(int status)
 {
-	//status 1 = already up to date
-	//status 2 = updated
+	//status 1 = process failed
+	//status 0 = up-to-date
 	radio.stopListening();
 	
-	if(status == 0)
-	{
-		status = 1;
-		radio.write(&status, sizeof(int));
-	}
-	
-	else
-	{
-		status = 2;
-		radio.write(&status, sizeof(int));
-	}
+	radio.write(&status, sizeof(int));
 	
 	radio.startListening();
 }
