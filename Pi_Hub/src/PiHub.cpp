@@ -14,7 +14,8 @@ PiHub::PiHub(uint16_t gpio, uint16_t ce) : radio(gpio, ce), pipes{"1Node", "2Nod
 	radio.setRetries(15, 15);
 	radio.openWritingPipe(pipes[0]);
 	radio.openReadingPipe(1, pipes[1]); 
-	radio.setPALevel(RF24_PA_LOW);
+	radio.setPALevel(RF24_PA_MAX);
+	radio.setDataRate(RF24_250KBPS);
 	radio.startListening();
 	radio.printDetails();
 }
@@ -44,7 +45,7 @@ void PiHub::readRadio()
 	cout << "reading radio" << endl;
 	//read packet into buffer
 	radio.read(buffer, sizeof(Packet));
-	usleep(1000);
+	usleep(10000);
 	cout << "request is " << buffer->flag << endl;
 	int success = 0;
 	int firstSize = queue.getSize(), nextSize;
@@ -69,6 +70,7 @@ void PiHub::readRadio()
 	
 	radio.stopListening();
 	radio.write(&success, sizeof(int));
+	sleep(1);
 	radio.startListening();
 	cout << "sent response" << endl;
 }
@@ -149,7 +151,8 @@ void PiHub::childProcess(Packet *processed)
 
 void PiHub::log(Packet *processed)
 {
-	string fileName, currentTime;
+	string fileName, currentTime, buffer;
+	vector<string> changes;
 	
 	//get the current time info
 	time_t t = time(0);
@@ -163,7 +166,7 @@ void PiHub::log(Packet *processed)
 	fileName = format.str();
 	
 	//if the file doesn't exist, create it.
-	if(access(fileName.c_str(), F_OK) != -1)
+	if(access(fileName.c_str(), F_OK) == -1)
 	{
 		flog.open(("./logs/" + fileName), fstream::out);
 		flog << "time, signature, ambient temp, object temp" << endl;
@@ -172,7 +175,7 @@ void PiHub::log(Packet *processed)
 	//if the file does exist, open for appending
 	else
 	{
-		flog.open(fileName, fstream::app);
+		flog.open("./logs/" + fileName, fstream::app);
 	}
 	
 	//write out to the file
@@ -184,11 +187,24 @@ void PiHub::log(Packet *processed)
 	flog.close();
 	
 	//write out to pending changes file for the upload function
-	flog.open("pendingChanges.txt", fstream::app);
-	flog << fileName << endl;
+	flog.open("pendingChanges.txt", fstream::in);
+	while(flog.good() && !flog.eof())
+	{
+		getline(flog, buffer);
+		if(buffer != fileName) changes.push_back(buffer);
+	}
+	
+	flog.close();
+	flog.open("pendingChanges.txt", fstream::out);
+	
+	for(int i = 0; i < (int)changes.size(); i++)
+	{
+		flog << changes[i] << endl;
+	}
+
 	flog.close();
 	
-	exit(2);
+	exit(0);
 }
 
 void PiHub::upload()
@@ -227,15 +243,13 @@ void PiHub::test()
 	
 	if(WEXITSTATUS(status) == 0) exit(0);
 	
-	else exit(2);
+	else exit(1);
 }
 
 void PiHub::connect()
 {
 	cout << "child process connecting" << endl;
 	//if(this->isConnected()) exit(1);
-	
-
 	
 	int status = system("sudo ./sakis3g connect");
 	cout << "status is " << WEXITSTATUS(status);
@@ -255,7 +269,7 @@ void PiHub::disconnect()
 
 void PiHub::sendReturnMessage(int status)
 {
-	usleep(10);
+	usleep(1000);
 	
 	radio.stopListening();
 	

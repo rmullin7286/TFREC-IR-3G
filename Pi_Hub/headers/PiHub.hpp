@@ -15,6 +15,7 @@
 #include <iomanip>
 #include "PacketQueue.hpp"
 #include <unistd.h>
+#include <vector>
 
 using std::fstream;
 using std::string;
@@ -23,8 +24,9 @@ using std::setfill;
 using std::setw;
 using std::endl;
 using std::cout;
+using std::vector;
 
-enum exitStatus{EXIT_LOGSUCCESS, EXIT_UPLOADSUCCESS, EXIT_UPLOADFAIL, EXIT_TESTSUCCESS, EXIT_NOCONNECTION, EXIT_CONNECTED, EXIT_DISCONNECT};
+
 
 //wrapper class for app
 class PiHub
