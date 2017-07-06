@@ -160,8 +160,8 @@ void PiHub::log(Packet *processed)
 	
 	//format the file name for writing using string stream.
 	ostringstream format;
-	format << setfill('0') << setw(2) << timeInfo->tm_mday
-		<< "-" << setfill('0') << setw(2) << (timeInfo->tm_mon + 1) << "-"
+	format << setfill('0') << setw(2) << (timeInfo->tm_mon + 1)
+		<< "-" << setfill('0') << setw(2) << timeInfo->tm_mday << "-"
 		<< (timeInfo->tm_year + 1900) << ".csv";
 	fileName = format.str();
 	
