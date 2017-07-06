@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[])
 {
-	//test();
+	test();
 	
 	PiSensor app;
 	if(argc > 1)
@@ -15,7 +15,5 @@ int main(int argc, char *argv[])
 
 void test()
 {
-	int x = PacketFlag::UPDATE;
-	int y = PacketFlag::CONNECT;
-	usleep(1);
+	std::cout << sizeof(Packet);
 }

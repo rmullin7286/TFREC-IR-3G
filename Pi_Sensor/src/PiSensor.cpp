@@ -8,8 +8,10 @@ PiSensor::PiSensor(uint16_t gpio, uint16_t ce) : radio(gpio, ce), pipes{"1Node",
 	radio.setRetries(15,15);
 	radio.openWritingPipe(pipes[1]);
 	radio.openReadingPipe(1, pipes[0]);
-	radio.setPALevel(RF24_PA_MAX);
+	radio.setPALevel(RF24_PA_LOW);
 	radio.setDataRate(RF24_250KBPS);
+	//radio.setCRCLength(RF24_CRC_8);
+	//radio.setPayloadSize(sizeof(Packet));
 	radio.printDetails();
 	sleep(2);
 	
@@ -257,7 +259,7 @@ void PiSensor::test()
 		usleep(2);
 	}
 	
-	if(!status) shield.print("Error: No radio\\nresponse.");
+	if(status == 0) shield.print("Error: No radio\\nresponse.");
 	
 	else
 	{
@@ -342,7 +344,7 @@ void PiSensor::log(double ambient, double object)
 	
 	else
 	{
-		shield.print("logging measurement...");
+		shield.print("logging\\nmeasurement...");
 		
 		start = time(NULL);
 		end = time(NULL);
@@ -374,6 +376,11 @@ void PiSensor::upload()
 	time_t start;
 	time_t end;
 	
+	send.flag = PacketFlag::UPLOAD;
+	send.ambient = 0.0;
+	send.object = 0.0;
+	send.signature[0] = '\0';
+	
 	shield.print("sending request");
 	
 	radio.write(&send, sizeof(Packet));
@@ -389,10 +396,12 @@ void PiSensor::upload()
 		if(radio.available())
 		{
 			radio.read(&status, sizeof(int));
+			break;
 		}
+		usleep(2);
 	}
 	
-	if(!status) shield.print("Error: Radio\\ntimeout");
+	if(status == 0) shield.print("Error: Radio\\ntimeout");
 	
 	else
 	{
@@ -410,11 +419,11 @@ void PiSensor::upload()
 				radio.read(&status, sizeof(int));
 				break;
 			}
+			usleep(2);
 		}
 		
-		if(status == -1) shield.print("Error: Could\\nnot upload");
-		if(status == 0) shield.print("Error: Radio\\ntimeout");
-		if(status == 1) shield.print("Upload successful");
+		if(status == 1) shield.print("Could not\\nupload");
+		else shield.print("Upload\\nsuccesful!");
 	}
 	
 	radio.stopListening();
@@ -550,9 +559,8 @@ void PiSensor::disconnect()
 			}
 		}
 		
-		if(status == -1) shield.print("Error disconnecting");
-		else if(status == 0) shield.print("Error:Radio\\ntimeout");
-		else shield.print("Succesfully\\ndisconnected");
+		if(status == 1) shield.print("Error\\ndisconnecting");
+		else shield.print("Success!");
 	}
 	
 	radio.stopListening();
@@ -628,7 +636,10 @@ void PiSensor::update()
 	
 	//now update the pi sensor
 	status = system("ping github.com -c 1");
-	if(WEXITSTATUS(system)!= 0) 
+	status = WEXITSTATUS(status);
+	std::cout << "exit status is " << status << std::endl;
+	
+	if(status != 0) 
 	{
 		shield.print("no wifi on\\nPi Sensor");
 		sleep(2);
@@ -649,5 +660,5 @@ void PiSensor::update_finish(int status)
 	//exit 0 = updated
 	//exit 1 = already up to date
 	if(status == 0) shield.print("update\\nsuccesful!");
-	else shield.print("already up to\\ndate.");
+	else shield.print("Error Could\\nnot update");
 }
