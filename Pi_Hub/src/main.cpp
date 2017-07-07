@@ -9,6 +9,7 @@ int main(int argc, char *argv[])
 	//for catching startup after update
 	if(argc > 1)
 	{
+		cout << "running update finish" << endl;
 		int status = atoi(argv[1]);
 		app.update_finish(status);
 	}
