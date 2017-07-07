@@ -71,5 +71,4 @@ private:
 //just a function for testing
 void test();
 
-
 #endif

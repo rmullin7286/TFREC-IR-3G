@@ -7,10 +7,10 @@ PiHub::PiHub(uint16_t gpio, uint16_t ce) : radio(gpio, ce), pipes{"1Node", "2Nod
 	
 	//initialize the 3G shield. Make sure it's turned on
 	system("stty -F /dev/ttyAMA0 115200");
-
 	
 	//setup the RF24 radio
 	radio.begin();
+	radio.setAutoAck(true);
 	radio.setRetries(15, 15);
 	radio.openWritingPipe(pipes[0]);
 	radio.openReadingPipe(1, pipes[1]); 
@@ -46,11 +46,11 @@ void PiHub::readRadio()
 {
 	buffer = new Packet;
 	cout << "reading radio" << endl;
+	
 	//read packet into buffer
 	radio.read(buffer, sizeof(Packet));
-	usleep(10000);
 	cout << "request is " << buffer->flag << endl;
-	int success = 0;
+	
 	int firstSize = queue.getSize(), nextSize;
 	
 	//add to queue
@@ -60,7 +60,6 @@ void PiHub::readRadio()
 	nextSize = queue.getSize();
 	if(nextSize == firstSize + 1) 
 	{
-		success = 1;
 		buffer = nullptr;
 	}
 	
@@ -68,14 +67,6 @@ void PiHub::readRadio()
 	{
 		delete buffer;
 	}
-	
-	cout << "returning " << success << endl;
-	
-	radio.stopListening();
-	radio.write(&success, sizeof(int));
-	sleep(1);
-	radio.startListening();
-	cout << "sent response" << endl;
 }
 
 void PiHub::processPacket()
@@ -90,9 +81,9 @@ void PiHub::processPacket()
 	{
 		//check if child ended
 		end = waitpid(pid, &status, WNOHANG);
-		cout << "end is " << end << endl;
 		
-		if(WIFEXITED(status))
+		//waitpid returns 0 if the child hasn't yet changed state
+		if(end != 0)
 		{
 			cout << "child process ended" << endl;
 			status = WEXITSTATUS(status);
@@ -281,7 +272,7 @@ void PiHub::disconnect()
 {
 	system("sudo ./sakis3g disconnect");
 	cout << "finished disconnect call" << endl;
-	exit(1);
+	exit(0);
 }
 
 void PiHub::sendReturnMessage(int status)
