@@ -5,6 +5,7 @@ PiSensor::PiSensor(uint16_t gpio, uint16_t ce) : radio(gpio, ce), pipes{"1Node",
 	shield.init_compatible();
 	shield.print("     Hello!");
 	radio.begin();
+	radio.setAutoAck(true);
 	radio.setRetries(15,15);
 	radio.openWritingPipe(pipes[1]);
 	radio.openReadingPipe(1, pipes[0]);
@@ -155,7 +156,7 @@ void PiSensor::run()
 void PiSensor::connect()
 {	
 	Packet send;
-	int status;
+	int status = 0;
 	time_t start, end;
 	
 	//prepare the packet
@@ -166,29 +167,20 @@ void PiSensor::connect()
 	
 	shield.print("Sending\\nrequest");
 	
-	//send a packet to the hub requesting a connection
-	radio.write(&send, sizeof(Packet));
-	
-	//wait for an acknowledgement response
-	radio.startListening();
-	
-	start = time(NULL);
-	end = time(NULL);
-	status = 0;
-	
-	while(difftime(end, start) < 5.0)
+	//send a packet to the hub requesting a connection.
+	//Repeat 3 times. If it doesn't go through by then, exit the function.
+	for(int i = 0; i < 3; i++)
 	{
-		end = time(NULL);
-		
-		if(radio.available())
+		if(radio.write(&send, sizeof(Packet)))
 		{
-			radio.read(&status, sizeof(int));
+			status = 1;
 			break;
 		}
-		usleep(2);
+		
+		shield.print("Request not\\nsent. Retrying.");
 	}
 	
-	if(status == 0) shield.print("Error: No radio\\nresponse.");
+	if(status == 0) shield.print("Error: Radio\\ntimeout");
 	
 	else
 	{
@@ -197,7 +189,7 @@ void PiSensor::connect()
 		//wait for success status after hub has connected.
 		start = time(NULL);
 		end = time(NULL);
-		status = -1;
+		status = 1;
 		
 		while(difftime(end, start) < 30.0)
 		{
@@ -212,6 +204,8 @@ void PiSensor::connect()
 			usleep(2);
 		}
 		
+		radio.stopListening();
+		
 		if(status == 1) shield.print("Error: Could not\\nnot connect.");
 		
 		else if(status == 0) shield.print("Connected\\nsuccesfully!");
@@ -220,15 +214,13 @@ void PiSensor::connect()
 	}
 	
 	sleep(2);
-	radio.stopListening();
 }
 
 void PiSensor::test()
 {
 	Packet send;
-	int status;
+	int status = 0;
 	time_t start, end;
-	double elapsed;
 	
 	//prepare the packet
 	send.ambient = 0.0;
@@ -237,32 +229,24 @@ void PiSensor::test()
 	send.signature[0] = '\0';
 	
 	//send a packet to the hub requesting a test
-	radio.write(&send, sizeof(Packet));
-	
-	//wait for an acknowledgement response
-	radio.startListening();
-	
-	start = time(NULL);
-	end = time(NULL);
-	status = 0;
-	
-	while(difftime(end, start) < 5.0)
+	//Retry 3 times or timeout
+	for(int i = 0; i < 3; i++)
 	{
-		end = time(NULL);
-		
-		if(radio.available())
+		if(radio.write(&send, sizeof(Packet)))
 		{
-			radio.read(&status, sizeof(int));
+			status = 1;
 			break;
 		}
 		
-		usleep(2);
+		shield.print("No response.\\nRetrying.");
 	}
 	
 	if(status == 0) shield.print("Error: No radio\\nresponse.");
 	
 	else
 	{
+		radio.startListening();
+		
 		shield.print("Testing\\nconnection");
 		
 		//wait for success status after hub has connected.
@@ -285,6 +269,8 @@ void PiSensor::test()
 			usleep(2);
 		}
 		
+		radio.stopListening();
+		
 		if(status == 1) shield.print("Not connected");
 		
 		else if(status == -1) shield.print("Error: radio\\ntimeout.");
@@ -292,8 +278,6 @@ void PiSensor::test()
 		else shield.print("Sensor is\\nconnected!");
 		
 	}
-	
-	radio.stopListening();
 	
 	sleep(2);
 }
@@ -319,31 +303,23 @@ void PiSensor::log(double ambient, double object)
 	
 	shield.print("Sending \\nrequest");
 	
-	//send a packet to the hub requesting 
-	radio.write(&send, sizeof(Packet));
-	
-	//wait for an acknowledgement response
-	radio.startListening();
-	
-	start = time(NULL);
-	end = time(NULL);
-	status = 0;
-	
-	while(difftime(end, start) < 5.0)
+	for(int i = 0; i < 3; i++)
 	{
-		end = time(NULL);
-		
-		if(radio.available())
+		if(radio.write(&send, sizeof(Packet)))
 		{
-			radio.read(&status, sizeof(int));
+			status = 1;
 			break;
 		}
+		
+		shield.print("No response.\\nRetrying.");
 	}
 	
 	if(!status) shield.print("Error: No radio\\nresponse.");
 	
 	else
 	{
+		radio.startListening();
+		
 		shield.print("logging\\nmeasurement...");
 		
 		start = time(NULL);
@@ -363,9 +339,10 @@ void PiSensor::log(double ambient, double object)
 		
 		if(status == 1) shield.print("Error: Radio timed out");
 		else shield.print("Log successful");
+		
+		radio.stopListening();
 	}
 	
-	radio.stopListening();
 	sleep(2);
 }
 
@@ -383,28 +360,23 @@ void PiSensor::upload()
 	
 	shield.print("sending request");
 	
-	radio.write(&send, sizeof(Packet));
-	
-	start = time(NULL);
-	end = time(NULL);
-	
-	radio.startListening();
-	
-	while(difftime(end, start) < 5.0)
+	for(int i = 0; i < 3; i++)
 	{
-		end = time(NULL);
-		if(radio.available())
+		if(radio.write(&send, sizeof(Packet)))
 		{
-			radio.read(&status, sizeof(int));
+			status = 1;
 			break;
 		}
-		usleep(2);
+		
+		shield.print("No response.\\nRetrying.");
 	}
 	
 	if(status == 0) shield.print("Error: Radio\\ntimeout");
 	
 	else
 	{
+		radio.startListening();
+		
 		shield.print("Request sent.\\nWaiting...");
 		status = 0;
 		start = time(NULL);
@@ -424,9 +396,10 @@ void PiSensor::upload()
 		
 		if(status == 1) shield.print("Could not\\nupload");
 		else shield.print("Upload\\nsuccesful!");
+		
+		radio.stopListening();
 	}
 	
-	radio.stopListening();
 	sleep(2);
 }
 
@@ -517,31 +490,29 @@ void PiSensor::disconnect()
 	send.ambient = 0.0;
 	send.object = 0.0;
 	send.signature[0] = '\0';
+	int status = 0;
+	time_t start;
+	time_t end;
 	
 	shield.print("sending request...");
-	radio.write(&send, sizeof(Packet));
 	
-	time_t start = time(NULL);
-	time_t end = time(NULL);
-	int status = 0;
-	
-	radio.startListening();
-	
-	while(difftime(end, start) < 5.0)
+	for(int i = 0; i < 3; i++)
 	{
-		end = time(NULL);
-		
-		if(radio.available())
+		if(radio.write(&send, sizeof(Packet)))
 		{
-			radio.read(&status, sizeof(int));
+			status = 1;
 			break;
 		}
+		
+		shield.print("No response.\\nRetrying.");
 	}
 	
 	if(!status) shield.print("Error: Radio\\ntimeout");
 	
 	else
 	{
+		radio.startListening();
+		
 		shield.print("Request sent.\\nwaiting...");
 		
 		status = 0;
@@ -578,6 +549,8 @@ void PiSensor::shutdown()
 void PiSensor::update()
 {
 	int status = 0;
+	time_t start;
+	time_t end;
 	Packet send;
 	send.flag = PacketFlag::UPDATE;
 	send.ambient = 0.0;
@@ -585,28 +558,23 @@ void PiSensor::update()
 	send.signature[0] = '\0';
 	
 	shield.print("sending request\\nfor update");
-	radio.write(&send, sizeof(Packet));
-	
-	time_t start = time(NULL);
-	time_t end = time(NULL);
-	
-	radio.startListening();
-	
-	while(difftime(end, start) < 5.0)
+	for(int i = 0; i < 3; i++)
 	{
-		end = time(NULL);
-		if(radio.available())
+		if(radio.write(&send, sizeof(Packet)))
 		{
-			radio.read(&status, sizeof(int));
+			status = 1;
 			break;
 		}
-		usleep(2);
+		
+		shield.print("No response.\\nRetrying.");
 	}
 	
 	if(!status) shield.print("Error: Radio\\ntimeout");
 	
 	else
 	{
+		radio.startListening();
+		
 		shield.print("Request sent.\\nwaiting...");
 		
 		status = 0;
@@ -627,10 +595,11 @@ void PiSensor::update()
 		
 		if(status == 0) shield.print("Pi Hub\\nupdated!");
 		else shield.print("Error: Could\\nnot update");
+		
+		radio.stopListening();
 	}
 	
 	sleep(2);
-	radio.stopListening();
 	
 	shield.print("updating\\nPi Sensor");
 	
