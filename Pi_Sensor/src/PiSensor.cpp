@@ -630,4 +630,6 @@ void PiSensor::update_finish(int status)
 	//exit 1 = already up to date
 	if(status == 0) shield.print("update\\nsuccesful!");
 	else shield.print("Error Could\\nnot update");
+	
+	sleep(2);
 }
