@@ -14,7 +14,7 @@ PiHub::PiHub(uint16_t gpio, uint16_t ce) : radio(gpio, ce), pipes{"1Node", "2Nod
 	radio.setRetries(15, 15);
 	radio.openWritingPipe(pipes[0]);
 	radio.openReadingPipe(1, pipes[1]); 
-	radio.setPALevel(RF24_PA_MAX);
+	radio.setPALevel(RF24_PA_HIGH);
 	radio.setDataRate(RF24_250KBPS);
 	//radio.setCRCLength(RF24_CRC_8);
 	//radio.setPayloadSize(sizeof(Packet));
