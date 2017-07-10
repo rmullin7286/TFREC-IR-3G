@@ -21,8 +21,7 @@ if not len(sys.argv) == 2:
     sys.exit(1)
 
 #cd to the directory of the file
-cd = 'cd' + sys.argv[1]
-status = os.system(cd)
+status = os.chdir(sys.argv[1])
 if os.WEXITSTATUS(status) == 1:
     print('Error: directory ' + sys.argv[1] + ' does not exist')
     sys.exit(1)
@@ -34,14 +33,16 @@ if not os.WEXITSTATUS(status) == 0:
     sys.exit(1)
 
 os.system('tar zxvf bcm2835-1.52.tar.gz')
-os.system('cd bcm2835-1.xx')
+os.chdir(sys.argv[1] + '/bcm2835-1.xx')
 os.system('./configure')
 os.system('make')
 os.system('make check')
 os.system('make install')
 
 #install RF24 librarys
-os.system('cd ..')
+os.chdir(sys.argv[1])
+os.system('mkdir RF24')
+so.chdir(sys.argv[1] + '/RF24')
 status = os.system('git clone https://github.com/nRF24/RF24.git')
 if not os.WEXITSTATUS(status) == 0:
     print('git repo for RF24 library could not be found. Please submit issue to https://github.com/rmullin7286/TFREC-IR-3G/issues')
@@ -52,30 +53,29 @@ os.system('make all')
 os.system('make install')
 
 #install the libraries for the adafruit char lcd plate
-os.system('cd ..')
+os.chdir('sys.argv[1]')
 os.system('apt-get -y install python-smbus i2c-tools')
 
 os.system('apt-get update')
-os.system('apt-get install build-essential python-dev python-smbus python-pip')
-os.system('sudo pip install RPi.GPIO')
-os.system('apt-get install wiringpi')
+os.system('apt-get -y install build-essential python-dev python-smbus python-pip')
+os.system('pip install --no-input RPi.GPIO')
+os.system('apt-get -y install wiringpi')
 
 status = os.system('git clone https://github.com/adafruit/Adafruit_Python_CharLCD.git')
 if not os.WEXITSTATUS(status) == 0:
     print('git repo for Adafruit Char LCD plate could not be found. Please submit issue to https://github.com/rmullin7286/TFREC-IR-3G/issues')
     sys.exit(1)
 
-os.system('cd Adafruit_Python_CharLCD')
-os.system('sudo python setup.py install')
+os.chdir(sys.argv[1] + '/Adafruit_Python_CharLCD')
+os.system('python setup.py install')
 
 #go back to the initial directory and compile the final program
-os.system('cd ' + scriptDir)
-os.system('cd ./PiSensor')
+os.chdir(scriptDir + '/PiSensor')
 
 status = os.system('g++ -std=c++11 ./src/main.cpp ./src/Adafruit)CharLCD_CPP.cpp ./src/PiSensor.cpp -o PiSensor -lbcm2835 -lrf24 -I/usr/include/python2.7 -lpython2.7')
 if not os.WEXITSTATUS(status) == 0:
     print('Error compiling: Please submit issue to https://github.com/rmullin7286/TFREC-IR-3G/issues')
-
-
-
-
+    sys.exit(1)
+    
+print('PiSensor Program was installed succesfully!')
+exit(0)
