@@ -9,6 +9,7 @@
 #include <fstream>
 #include <cstring>
 #include <iostream>
+#include <iomanip>
 
 using std::ostringstream;
 using std::fstream;

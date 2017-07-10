@@ -42,7 +42,7 @@ void PiSensor::mainScreen()
 		//If any button has been pressed, initiate the menu.
 		if(shield.getButton() != Button::NOBUTTON) menu(ambient, object);
 		
-		format << "AMBIENT: " << ambient << "\\nOBJECT: " << object;
+		format << std::fixed << "AMBIENT: " << std::setprecision(2) << ambient << "\\nOBJECT: " << std::setprecision(2) << object;
 		
 		shield.print(format.str());
 		format.str("");
