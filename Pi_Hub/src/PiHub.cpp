@@ -146,8 +146,9 @@ void PiHub::childProcess(Packet *processed)
 void PiHub::log(Packet *processed)
 {
 	string fileName, currentTime, buffer;
-	vector<string> changes;
+	vector<string> changes, logs, pendingChanges;
 	bool good;
+	fstream logtxt, pendingChangestxt;
 	
 	//get the current time info
 	time_t t = time(0);
@@ -171,6 +172,57 @@ void PiHub::log(Packet *processed)
 	//if the file doesn't exist, create it.
 	if(!good)
 	{
+		//read in the pending changes to pendingChanges
+		pendingChangestxt.open("pendingChanges.txt", fstream::in);
+		while (getline(pendingChangestxt, buffer))
+		{
+			pendingChanges.push_back(buffer);
+		}
+		pendingChangestxt.close();
+
+		//read in the list of existing log files from log.txt
+		logtxt.open("log.txt", fstream::in);
+		while (getline(logtxt, buffer))
+		{
+			logs.push_back(buffer);
+		}
+		logtxt.close();
+
+		//find the names in the logs vector that match pendingChanges and set them to "NULL"
+		for (int i = 0; i < pendingChanges.size(); i++)
+		{
+			for (int j = 0; j < logs.size(); j++)
+			{
+				if (pendingChanges[i] == logs[j])
+				{
+					logs[j] = "NULL";
+					break;
+				}
+			}
+		}
+
+		//now delete all the files in logs that haven't been changed to NULL. Do this by a system call to "rm".
+		for (int i = 0; i < logs.size(); i++)
+		{
+			if (logs[i] != "NULL")
+			{
+				buffer = "rm ./logs/" + logs[i];
+				system(buffer.c_str());
+			}
+		}
+
+		logtxt.open("log.txt", fstream::out);
+
+		for (int i = 0; i < pendingChanges.size(); i++)
+		{
+			logtxt << pendingChanges[i] << endl;
+		}
+
+		logtxt << fileName << endl;
+
+		logtxt.close();
+
+		//load pending changes into a string vector
 		flog.open(("./logs/" + fileName), fstream::out);
 		flog << "time, signature, ambient temp, object temp" << endl;
 	}
