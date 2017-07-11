@@ -16,7 +16,6 @@
 #include "PacketQueue.hpp"
 #include <unistd.h>
 #include <vector>
-#include <dirent.h>
 
 using std::fstream;
 using std::string;
