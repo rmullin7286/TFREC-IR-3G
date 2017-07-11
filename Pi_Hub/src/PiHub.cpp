@@ -148,6 +148,8 @@ void PiHub::log(Packet *processed)
 	string fileName, currentTime, buffer;
 	vector<string> changes;
 	bool good;
+	fstream size;
+	int size_int = 0;
 	
 	//get the current time info
 	time_t t = time(0);
@@ -173,6 +175,13 @@ void PiHub::log(Packet *processed)
 	{
 		flog.open(("./logs/" + fileName), fstream::out);
 		flog << "time, signature, ambient temp, object temp" << endl;
+		
+		//increment the count in the size file
+		size.open("size.txt", fstream::in);
+		getline(size, buffer);
+		size_int = atoi(size);
+		
+		//if size_int is 100, delete the first file in the 
 	}
 	
 	//if the file does exist, open for appending
