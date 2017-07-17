@@ -8,23 +8,24 @@
 
 import os
 import sys
+import tarfile
 
 #store the directory for the script. This is important later
 scriptDir = os.path.dirname(os.path.abspath(__file__))
 
-if not os.geteuid() == 0:
-    print('setup.py must be run as root. use command "sudo python setup.py <directory"')
-    sys.exit(1)
-
 if not len(sys.argv) == 2:
     print('incorrect number of arguments.')
     sys.exit(1)
+    
+if not os.path.isdir(sys.argv[1]):
+    print('Directory ' + sys.argv[1] + ' does not exist.')
+    
+dependencies = sys.argv[1] + '/TFREC-IR-3G-DEPENDENCIES'
+
+os.mkdir(dependencies)
 
 #cd to the directory of the file
-status = os.chdir(sys.argv[1])
-if os.WEXITSTATUS(status) == 1:
-    print('Error: directory ' + sys.argv[1] + ' does not exist')
-    sys.exit(1)
+os.chdir(dependencies)
 
 #install bcm2835.h library
 status = os.system('wget http://www.airspayce.com/mikem/bcm2835/bcm2835-1.52.tar.gz ')
@@ -32,47 +33,48 @@ if not os.WEXITSTATUS(status) == 0:
     print('Error: could not locate package for bcm283.h. URL may have been moved.\n Please submit an issue at https://github.com/rmullin7286/TFREC-IR-3G/issues ')
     sys.exit(1)
 
-os.system('tar zxvf bcm2835-1.52.tar.gz')
-os.chdir(sys.argv[1] + '/bcm2835-1.xx')
+tar = tarfile.open('bcm2835-1.52.tar.gz')
+tar.extractall()
+tar.close()
+os.chdir(dependencies + '/bcm2835-1.52')
 os.system('./configure')
-os.system('make')
-os.system('make check')
-os.system('make install')
+os.system('sudo make all')
+os.system('sudo make check')
+os.system('sudo make install')
 
 #install RF24 librarys
-os.chdir(sys.argv[1])
-os.system('mkdir RF24')
-so.chdir(sys.argv[1] + '/RF24')
+os.chdir(dependencies)
 status = os.system('git clone https://github.com/nRF24/RF24.git')
 if not os.WEXITSTATUS(status) == 0:
     print('git repo for RF24 library could not be found. Please submit issue to https://github.com/rmullin7286/TFREC-IR-3G/issues')
     sys.exit(1)
 
-os.system('cd RF24')
-os.system('make all')
-os.system('make install')
+os.chdir(dependencies + '/RF24')
+os.system('./configure --driver=SPIDEV')
+os.system('sudo make all')
+os.system('sudo make install -B')
 
 #install the libraries for the adafruit char lcd plate
-os.chdir('sys.argv[1]')
-os.system('apt-get -y install python-smbus i2c-tools')
+os.chdir(dependencies)
+os.system('sudo apt-get -y install python-smbus i2c-tools')
 
-os.system('apt-get update')
-os.system('apt-get -y install build-essential python-dev python-smbus python-pip')
-os.system('pip install --no-input RPi.GPIO')
-os.system('apt-get -y install wiringpi')
+os.system('sudo apt-get update')
+os.system('sudo apt-get -y install build-essential python-dev python-smbus python-pip')
+os.system('sudo pip install --no-input RPi.GPIO')
+os.system('sudo apt-get -y install wiringpi')
 
 status = os.system('git clone https://github.com/adafruit/Adafruit_Python_CharLCD.git')
 if not os.WEXITSTATUS(status) == 0:
     print('git repo for Adafruit Char LCD plate could not be found. Please submit issue to https://github.com/rmullin7286/TFREC-IR-3G/issues')
     sys.exit(1)
 
-os.chdir(sys.argv[1] + '/Adafruit_Python_CharLCD')
-os.system('python setup.py install')
+os.chdir(dependencies + '/Adafruit_Python_CharLCD')
+os.system('sudo python setup.py install')
 
 #go back to the initial directory and compile the final program
-os.chdir(scriptDir + '/PiSensor')
+os.chdir(scriptDir)
 
-status = os.system('g++ -std=c++11 ./src/main.cpp ./src/Adafruit)CharLCD_CPP.cpp ./src/PiSensor.cpp -o PiSensor -lbcm2835 -lrf24 -I/usr/include/python2.7 -lpython2.7')
+status = os.system('g++ -std=c++11 ./src/main.cpp ./src/Adafruit_CharLCD_CPP.cpp ./src/PiSensor.cpp -o PiSensor -lbcm2835 -lrf24 -I/usr/include/python2.7 -lpython2.7')
 if not os.WEXITSTATUS(status) == 0:
     print('Error compiling: Please submit issue to https://github.com/rmullin7286/TFREC-IR-3G/issues')
     sys.exit(1)
