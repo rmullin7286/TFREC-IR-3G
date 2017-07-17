@@ -50,7 +50,7 @@ if not os.WEXITSTATUS(status) == 0:
     sys.exit(1)
 
 os.chdir(dependencies + '/RF24')
-os.system('./configure --driver=SPIDEV')
+os.system('sudo ./configure --driver=SPIDEV')
 os.system('sudo make install -B')
 
 #install the libraries for the adafruit char lcd plate
