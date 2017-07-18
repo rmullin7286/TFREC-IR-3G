@@ -33,6 +33,7 @@ void PiSensor::mainScreen()
 	
 	while(1)
 	{
+		//reads the temperatures from the sensor.
 		double ambient = sensor.readAmbient();
 		double object = sensor.readObject();
 		
@@ -40,11 +41,13 @@ void PiSensor::mainScreen()
 		//If any button has been pressed, initiate the menu.
 		if(shield.getButton() != Button::NOBUTTON) menu(ambient, object);
 		
+		//If the user isn't holding down a button, the program will continue to print the temperatures to the screen.
 		format << std::fixed << "AMBIENT: " << std::setprecision(2) << ambient << "\\nOBJECT: " << std::setprecision(2) << object;
 		
 		shield.print(format.str());
 		format.str("");
 		
+		//Wait one second between each cycle.
 		sleep(1);
 	}
 }
@@ -61,12 +64,15 @@ void PiSensor::menu(double ambient, double object)
 	//UPDATE = 7
 	//BACK = 8
 	Button input;
+	
+	//Screen defaults to CONNECT
 	MenuItem item = MenuItem::CONNECT;
 	bool back = false;
 	
 	shield.print("    MENU   ");
 	
-	//wait for the user to release the button
+	//wait for the user to release the button. This is done so that
+	//CONNECT isn't accidentally selected by holding down too long.
 	do
 	{
 		input = shield.getButton();
@@ -108,8 +114,11 @@ void PiSensor::menu(double ambient, double object)
 	
 		switch(input)
 		{
+			//This case checks if the menu is on CONNECT. If it is, it'll wrap the menu around to BACK. If not, it will decrement the value of the item to scroll left.
 		case Button::LEFT: static_cast<int>(item) == 0 ? item = MenuItem::BACK : item = static_cast<MenuItem>(static_cast<int>(item) - 1);
 			break;
+			
+			//Same, but opposite direction.
 		case Button::RIGHT: static_cast<int>(item) == 8 ? item = MenuItem::CONNECT : item = static_cast<MenuItem>(static_cast<int>(item) + 1);
 			break;
 		case Button::SELECT:
