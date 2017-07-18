@@ -11,8 +11,6 @@ PiSensor::PiSensor(uint16_t gpio, uint16_t ce) : radio(gpio, ce), pipes{"1Node",
 	radio.openReadingPipe(1, pipes[0]);
 	radio.setPALevel(RF24_PA_LOW);
 	radio.setDataRate(RF24_250KBPS);
-	//radio.setCRCLength(RF24_CRC_8);
-	//radio.setPayloadSize(sizeof(Packet));
 	radio.printDetails();
 	sleep(2);
 	
