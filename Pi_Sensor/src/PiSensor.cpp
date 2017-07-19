@@ -196,7 +196,7 @@ void PiSensor::connect()
 		//wait for success status after hub has connected.
 		start = time(NULL);
 		end = time(NULL);
-		status = 1;
+		status = -1;
 		
 		while(difftime(end, start) < 30.0)
 		{
@@ -213,7 +213,7 @@ void PiSensor::connect()
 		
 		radio.stopListening();
 		
-		if(status == 1) shield.print("Error: Could not\\nnot connect.");
+		if(status == 1) shield.print("Error: Could not\\nconnect.");
 		
 		else if(status == 0) shield.print("Connected\\nsuccesfully!");
 		
