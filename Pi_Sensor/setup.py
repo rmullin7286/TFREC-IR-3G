@@ -1,6 +1,7 @@
 #This is the setup script for the python application
 
 import os
+import sys
 
 #store the directory for the script
 scriptDir = os.path.dirname(os.path.abspath(__file__))
@@ -17,6 +18,7 @@ os.system('sudo python setup.py install')
 
 #setup bcm2835
 os.chdir(scriptDir + '/ext/bcm2835-1.52')
+os.system('autoreconf -f -i')
 os.system('./configure')
 os.system('sudo make all')
 os.system('sudo make install')
