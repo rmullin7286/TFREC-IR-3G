@@ -307,7 +307,10 @@ void PiHub::test()
 }
 
 void PiHub::connect()
-{
+{	
+	//turn off wifi so that there's no issues.
+	system("ifconfig wlan0 down");
+
 	cout << "child process connecting" << endl;
 	//if(this->isConnected()) exit(1);
 	
@@ -321,7 +324,10 @@ void PiHub::connect()
 }
 
 void PiHub::disconnect()
-{
+{	
+	//turn wifi back on just in case
+	system("ifconfig wlan0 up");
+
 	system("sudo ./sakis3g disconnect");
 	cout << "finished disconnect call" << endl;
 	exit(0);
