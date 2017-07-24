@@ -36,11 +36,6 @@ void PiSensor::mainScreen()
 
 	while(1)
 	{
-		if(isAutoLogging)
-		{
-			autoLogDuration = time(NULL);
-			if(difftime(autoLogStart, autoLogDuration) < (interval * 60.0)) log(ambient, object);
-		}
 
 		//reads the temperatures from the sensor.
 		ambient = sensor.readAmbient();
@@ -53,8 +48,13 @@ void PiSensor::mainScreen()
 		if(isAutoLogging)
 		{
 			autoLogDuration = time(NULL);
-			if(difftime(autoLogStart, autoLogDuration) < (interval * 60.0)) log(ambient, object);
-			format << std::fixed << "AMBIENT: " << std::setprecision(2) << ambient << "  A\\nOBJECT: " << std::setprecision(2) << object;
+			if(difftime(autoLogDuration, autoLogStart) > (interval * 60.0))
+			{
+				 log(ambient, object);
+				autoLogStart = autoLogDuration = time(NULL);
+			}
+
+			format << std::fixed << "AMBIENT: " << std::setprecision(2) << ambient << " A\\nOBJECT: " << std::setprecision(2) << object;
 		}
 
 		//If the user isn't holding down a button, the program will continue to print the temperatures to the screen.
@@ -62,7 +62,6 @@ void PiSensor::mainScreen()
 
 		shield.print(format.str());
 		format.str("");
-
 
 		//Wait one second between each cycle.
 		sleep(1);
@@ -155,8 +154,6 @@ void PiSensor::menu(double ambient, double object)
 				break;
 			case MenuItem::LOG: log(ambient, object);
 				break;
-			case MenuItem::AUTOLOG: autoLogInit();
-				break;
 			case MenuItem::UPLOAD: upload();
 				break;
 			case MenuItem::SET_SIG: setSignature();
@@ -167,6 +164,7 @@ void PiSensor::menu(double ambient, double object)
 				break;
 			case MenuItem::UPDATE: update();
 				break;
+			case MenuItem::AUTOLOG: autoLogInit();
 			case MenuItem::BACK: back = true;
 				break;
 			}
