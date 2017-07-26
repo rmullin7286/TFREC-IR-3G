@@ -4,16 +4,16 @@ PiHub::PiHub(uint16_t gpio, uint16_t ce) : radio(gpio, ce), pipes{"1Node", "2Nod
 {
 	//setup member variables
 	childRunning = false;
-	
+
 	//initialize the 3G shield. Make sure it's turned on
 	system("stty -F /dev/ttyAMA0 115200");
-	
+
 	//setup the RF24 radio
 	radio.begin();
 	radio.setAutoAck(true);
 	radio.setRetries(15, 15);
 	radio.openWritingPipe(pipes[0]);
-	radio.openReadingPipe(1, pipes[1]); 
+	radio.openReadingPipe(1, pipes[1]);
 	radio.setPALevel(RF24_PA_LOW);
 	radio.setDataRate(RF24_250KBPS);
 	//radio.setCRCLength(RF24_CRC_8);
@@ -36,7 +36,7 @@ void PiHub::run()
 		//the queue.
 		if(radio.available()) readRadio();
 		usleep(10);
-	
+
 		//if the queue has packets in it, process them.
 		if(!queue.isEmpty() || childRunning) processPacket();
 	}
@@ -46,16 +46,16 @@ void PiHub::readRadio()
 {
 	buffer = new Packet;
 	cout << "reading radio" << endl;
-	
+
 	//read packet into buffer
 	radio.read(buffer, sizeof(Packet));
 	cout << "request is " << buffer->flag << endl;
-	
+
 	int firstSize = queue.getSize(), nextSize;
-	
+
 	//add to queue
 	queue.enqueue(buffer);
-	
+
 	//send confirmation signal
 	nextSize = queue.getSize();
 	if(nextSize == firstSize + 1) 
@@ -89,35 +89,35 @@ void PiHub::processPacket()
 			status = WEXITSTATUS(status);
 			cout << "status is " << status << endl;
 			childRunning = false;
-			
+
 			sendReturnMessage(status);
 		}
 	}
-	
+
 	//child not running
 	else
 	{
 		//dequeue the next packet
 		processed = queue.dequeue();
-		
+
 		//if the process asks to update, might as well update here.
 		if(processed->flag == PacketFlag::UPDATE) update();
-		
+
 		childRunning = true;
-		
+
 		//fork the process
 		pid = fork();
-		
+
 		//catch for child process
 		if(pid == 0)
 		{
 			cout << "running child process" << endl;
-			
+
 			childProcess(processed);
 		}
-		
+
 		cout << "pid is " << pid << endl;
-		
+
 		usleep(500000);
 	}
 }
@@ -140,6 +140,8 @@ void PiHub::childProcess(Packet *processed)
 	case DISCONNECT: delete processed; 
 		disconnect();
 		break;
+	default:
+		break;
 	}
 }
 
@@ -149,26 +151,26 @@ void PiHub::log(Packet *processed)
 	vector<string> changes, logs, pendingChanges;
 	bool good;
 	fstream logtxt, pendingChangestxt;
-	
+
 	//get the current time info
 	time_t t = time(0);
 	struct tm *timeInfo = localtime(&t);
-	
+
 	//format the file name for writing using string stream.
 	ostringstream format;
 	format << setfill('0') << setw(2) << (timeInfo->tm_mon + 1)
 		<< "-" << setfill('0') << setw(2) << timeInfo->tm_mday << "-"
 		<< (timeInfo->tm_year + 1900) << ".csv";
 	fileName = format.str();
-	
+
 	//insert the current file into the changes vector
 	changes.push_back(fileName);
-	
+
 	//find out whether or not the log file exists
 	flog.open("./logs/" + fileName, fstream::in);
 	good = flog.good();
 	flog.close();
-	
+
 	//if the file doesn't exist, create it.
 	if(!good)
 	{
@@ -189,9 +191,9 @@ void PiHub::log(Packet *processed)
 		logtxt.close();
 
 		//find the names in the logs vector that match pendingChanges and set them to "NULL"
-		for (int i = 0; i < pendingChanges.size(); i++)
+		for (unsigned int i = 0; i < pendingChanges.size(); i++)
 		{
-			for (int j = 0; j < logs.size(); j++)
+			for (unsigned int j = 0; j < logs.size(); j++)
 			{
 				if (pendingChanges[i] == logs[j])
 				{
@@ -202,7 +204,7 @@ void PiHub::log(Packet *processed)
 		}
 
 		//now delete all the files in logs that haven't been changed to NULL. Do this by a system call to "rm".
-		for (int i = 0; i < logs.size(); i++)
+		for (unsigned int i = 0; i < logs.size(); i++)
 		{
 			if (logs[i] != "NULL")
 			{
@@ -213,7 +215,7 @@ void PiHub::log(Packet *processed)
 
 		logtxt.open("log.txt", fstream::out);
 
-		for (int i = 0; i < pendingChanges.size(); i++)
+		for (unsigned int i = 0; i < pendingChanges.size(); i++)
 		{
 			logtxt << pendingChanges[i] << endl;
 		}
@@ -226,21 +228,21 @@ void PiHub::log(Packet *processed)
 		flog.open(("./logs/" + fileName), fstream::out);
 		flog << "time, signature, ambient temp, object temp" << endl;
 	}
-	
+
 	//if the file does exist, open for appending
 	else
 	{
 		flog.open("./logs/" + fileName, fstream::app);
 	}
-	
+
 	//write out to the file
 	flog << timeInfo->tm_hour << ":" << timeInfo->tm_min << ":" << timeInfo->tm_sec << ","
-		<< processed->signature << "," << processed->ambient << "," << processed->object << endl;
-	
+		<< processed->signature << "," << std::fixed << std::setprecision(2) << processed->ambient << "," << std::setprecision(2) << processed->object << endl;
+
 	//close the file and delete the packet from memory
 	delete processed;
 	flog.close();
-	
+
 	//write out to pending changes file for the upload function
 	flog.open("pendingChanges.txt", fstream::in);
 	while(flog.good() && !flog.eof())
